@@ -1,17 +1,27 @@
 let webhookUrl = ''
 
+const ws = new WebSocket('ws://localhost:1337')
+
+ws.addEventListener('message', (e) => {
+    console.log('WEBSOCKET MSG ----', e)
+    if (e.data === 'reloaded chrome runtime') {
+        window.location.reload()
+    }
+})
+
 chrome.storage.sync.get(null, ({ diceBot }) => {
     const { characters } = diceBot
 
     characters.forEach((character) => {
         if (character.ddbUrl === window.location.href) {
             webhookUrl = character.discordUrl
-	    console.log('~~~~~~ current character', character)
+            console.log('~~~~~~ current character', character)
         }
     })
 })
 
-const characterDataUrl = "https://character-service.dndbeyond.com/character/v4/character/"
+const characterDataUrl =
+    'https://character-service.dndbeyond.com/character/v4/character/'
 
 MutationObserver = window.MutationObserver || window.WebKitMutationObserver
 
@@ -22,8 +32,8 @@ observer.observe(document.body, {
 })
 
 function sendDiceResultAndSpellCasts(mutations, observer) {
-	sendDiceResult(mutations, observer)
-	setupSpellCastingButtons()
+    sendDiceResult(mutations, observer)
+    setupSpellCastingButtons()
 }
 
 function sendDiceResult(mutations, observer) {
@@ -46,34 +56,48 @@ function sendDiceResult(mutations, observer) {
 }
 
 function setupSpellCastingButtons() {
-	const castButtons = document.getElementsByClassName("ct-spells-spell__action")
-	for (const button of castButtons) {
-		button.addEventListener("click", sendSpellCastingToDiscord)
-	}
+    const castButtons = document.getElementsByClassName(
+        'ct-spells-spell__action'
+    )
+    for (const button of castButtons) {
+        button.addEventListener('click', sendSpellCastingToDiscord)
+    }
 }
 
 function sendDiceResultToDiscordChannel(diceResult) {
-	sendMessageToDiscordChannel(
-		createMessageTitle(),
-		createMessageDescription(diceResult),
-		createMessageColor(),
-		createMessageThumbnail(),
-		createMessageFooter()
-	 )
+    sendMessageToDiscordChannel(
+        createMessageTitle(),
+        createMessageDescription(diceResult),
+        createMessageColor(),
+        createMessageThumbnail(),
+        createMessageFooter()
+    )
 }
 
-function sendMessageToDiscordChannel(title, description, color, thumbnail, footer) {
-	let message = {
-		"embeds": [{
-			"title": title,
-			"description": description,
-			"color": color,
-			"thumbnail": thumbnail,
-			"footer": footer
-		}]
-	}
-	let headers = {"content-type": "application/json"}
-	fetch(webhookUrl, {"method": "POST", "headers": headers, "body": JSON.stringify(message)})
+function sendMessageToDiscordChannel(
+    title,
+    description,
+    color,
+    thumbnail,
+    footer
+) {
+    let message = {
+        embeds: [
+            {
+                title: title,
+                description: description,
+                color: color,
+                thumbnail: thumbnail,
+                footer: footer,
+            },
+        ],
+    }
+    let headers = { 'content-type': 'application/json' }
+    fetch(webhookUrl, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(message),
+    })
 }
 
 function createMessageTitle() {
@@ -85,58 +109,65 @@ function createMessageTitle() {
 }
 
 function createSpellMessageTitle(spellName) {
-	return `${characterName()} casts ${spellName}`
+    return `${characterName()} casts ${spellName}`
 }
 
 function getSpellName(event) {
-	// TODO: Fix a bug that makes this function return undefined whenever it's called more than once
-	for (let element of event.composedPath()) {
-		if (element.className == "ct-spells-spell ") {
-			const spellName = element.querySelector(".ddbc-spell-name").innerText
-			return spellName
-		}
-	}
+    // TODO: Fix a bug that makes this function return undefined whenever it's called more than once
+    for (let element of event.composedPath()) {
+        if (element.className == 'ct-spells-spell ') {
+            const spellName = element.querySelector('.ddbc-spell-name')
+                .innerText
+            return spellName
+        }
+    }
 }
 
 async function sendSpellCastingToDiscord(event) {
-	const spellName = getSpellName(event)
-	console.log(spellName)
-	const response = await fetch(characterDataUrl + "5774218")
-	let spellDescription = "Could not get spell description"
-	if (response.ok) {
-		const result = await response.json()
-		const spells = result.data.classSpells[0].spells
-		const otherSpells = result.data.spells.class
-		const classSpells = getClassSpells(69)
-		spellDescription = getSpellDescriptionFromName(spells.concat(otherSpells).concat(classSpells), spellName)
-	}
+    const spellName = getSpellName(event)
+    console.log(spellName)
+    const response = await fetch(characterDataUrl + '5774218')
+    let spellDescription = 'Could not get spell description'
+    if (response.ok) {
+        const result = await response.json()
+        const spells = result.data.classSpells[0].spells
+        const otherSpells = result.data.spells.class
+        const classSpells = getClassSpells(69)
+        spellDescription = getSpellDescriptionFromName(
+            spells.concat(otherSpells).concat(classSpells),
+            spellName
+        )
+    }
 
-	let title = getSpellName(event)
-	console.log(title)
-	
-	sendMessageToDiscordChannel(
-		createSpellMessageTitle(spellName),
-		spellDescription,
-		rgbToDecimal(197, 49, 49),
-		createMessageThumbnail()
-	)
+    let title = getSpellName(event)
+    console.log(title)
+
+    sendMessageToDiscordChannel(
+        createSpellMessageTitle(spellName),
+        spellDescription,
+        rgbToDecimal(197, 49, 49),
+        createMessageThumbnail()
+    )
 }
 
 async function getClassSpells(classId) {
-	const response = await fetch(`https://character-service.dndbeyond.com/character/v4/game-data/always-prepared-spells?classId=${classId}&classLevel=20`)
-	return response.then(response => response.json())
-					.then(json => json.data)
-					.catch(e => [])
+    const response = await fetch(
+        `https://character-service.dndbeyond.com/character/v4/game-data/always-prepared-spells?classId=${classId}&classLevel=20`
+    )
+    return response
+        .then((response) => response.json())
+        .then((json) => json.data)
+        .catch((e) => [])
 }
 
 function getSpellDescriptionFromName(spells, spellName) {
-	for (const spell of spells) {
-		if (spell.definition.name == spellName) {
-			return convertHtmlToMarkdown(spell.definition.description)
-		}
-	}
+    for (const spell of spells) {
+        if (spell.definition.name == spellName) {
+            return convertHtmlToMarkdown(spell.definition.description)
+        }
+    }
 
-	return "Could not get spell description"
+    return 'Could not get spell description'
 }
 
 function createMessageDescription(diceResult) {
@@ -191,16 +222,16 @@ function rgbToDecimal(red, green, blue) {
 }
 
 function convertHtmlToMarkdown(htmlString) {
-	htmlString = htmlString.replaceAll('<li>', '- ')
-	htmlString = htmlString.replaceAll('<strong>', '**')
-	htmlString = htmlString.replaceAll('</strong>', '**')
-	htmlString = htmlString.replaceAll('</p><ul>', '')
-	htmlString = htmlString.replaceAll('</p>', '\n')
-	console.log(htmlString)
-	// let strippedOfTags = htmlString.replace(/(<([^>]+)>)/gi, "")
-	// Decode HTML entities and strip of tags
-	let element = document.createElement('div');
-	element.innerHTML = htmlString
-	console.log(element.innerText)
-	return element.innerText
+    htmlString = htmlString.replaceAll('<li>', '- ')
+    htmlString = htmlString.replaceAll('<strong>', '**')
+    htmlString = htmlString.replaceAll('</strong>', '**')
+    htmlString = htmlString.replaceAll('</p><ul>', '')
+    htmlString = htmlString.replaceAll('</p>', '\n')
+    console.log(htmlString)
+    // let strippedOfTags = htmlString.replace(/(<([^>]+)>)/gi, "")
+    // Decode HTML entities and strip of tags
+    let element = document.createElement('div')
+    element.innerHTML = htmlString
+    console.log(element.innerText)
+    return element.innerText
 }

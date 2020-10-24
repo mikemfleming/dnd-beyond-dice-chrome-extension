@@ -17,7 +17,10 @@ const theme = createMuiTheme({
 // TODO: only execute this code when in development
 const ws = new WebSocket('ws://localhost:1337')
 ws.addEventListener('error', (e) => console.log('WEBSOCKET ERROR ----', e))
-ws.addEventListener('message', () => window.location.reload())
+ws.addEventListener('message', (e) => {
+    console.log('WEBSOCKET MSG ----', e)
+    window.location.reload()
+})
 
 const App = () => (
     <ThemeProvider theme={theme}>
