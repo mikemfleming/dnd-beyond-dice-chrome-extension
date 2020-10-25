@@ -14,10 +14,14 @@ wss.on('connection', (ws) => {
 })
 
 const config = {
-    entry: ['./src/index.js'],
+    entry: {
+        options: './src/optionsPage/index.js',
+        contentScript: './src/contentScript/index.js',
+        backgroundScript: './src/backgroundScript/index.js',
+    },
     output: {
         path: path.resolve(__dirname, 'build_output'),
-        filename: 'options.bundle.js',
+        filename: '[name].bundle.js',
     },
     module: {
         rules: [
@@ -38,7 +42,7 @@ const config = {
     devtool: 'inline-source-map',
     plugins: [
         new HtmlWebpackPlugin({
-            template: './src/index.html',
+            template: './src/optionsPage/index.html',
             filename: 'options.html',
         }),
         {

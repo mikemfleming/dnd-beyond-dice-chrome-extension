@@ -5,13 +5,13 @@
     "manifest_version": 2,
     "permissions": ["storage"],
     "background": {
-	"scripts": ["background.js"],
+	"scripts": ["./build_output/backgroundScript.bundle.js"],
 	"persistent": false
     },
     "content_scripts": [
         {
             "matches": ["https://www.dndbeyond.com/profile/*/characters/*"],
-            "js": ["content.js"]
+            "js": ["./build_output/contentScript.bundle.js"]
         }
     ],
     "options_page": "build_output/options.html",
